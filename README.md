@@ -11,35 +11,28 @@ Most introductory RAG projects follow a fixed pipeline: embed a query, pull the 
 This project treats retrieval and generation as steps an *agent* actively supervises, rather than a fixed pipeline it blindly executes.
 
 ## Architecture
-        ┌─────────────┐
-                Query ─────────► │ Retrieve │◄────────────┐
-│(Hybrid: BM25│ │
-│+ Dense+RRF) │ │
-└──────┬──────┘ │
-▼ │
-┌─────────────┐ │
-│ Rerank │ │
-│(Cross- │ │
-│ Encoder) │ │
-└──────┬──────┘ │
-▼ │
-┌─────────────┐ FAIL │
-│Grade │───────────►Rewrite
-│Relevance │ Query
-└──────┬──────┘
-PASS│
-▼
-┌─────────────┐ UNGROUNDED
-│ Generate │◄──────────────┐
-│ Answer │ │
-└──────┬──────┘ │
-▼ │
-┌─────────────┐ │
-│Grade │───────────────┘
-│Groundedness │
-└──────┬──────┘
+Query
+|
+v
+[1] Retrieve (Hybrid: BM25 + Dense embeddings, merged via Reciprocal Rank Fusion)
+|
+v
+[2] Rerank (Cross-Encoder re-scores candidates)
+|
+v
+[3] Grade Relevance
+|-- FAIL --> Rewrite Query --> back to [1] (bounded retries)
+|
+PASS
+v
+[4] Generate Answer
+|
+v
+[5] Grade Groundedness
+|-- UNGROUNDED --> back to [4], regenerate (bounded retries)
+|
 GROUNDED
-▼
+v
 Final Answer
 
 
@@ -67,7 +60,7 @@ Final Answer
 
 ## Evaluation: Agentic vs. Naive RAG
 
-A 15-question test set was auto-generated from the book, then scored with [RAGAS](https://github.com/explodinggpt/ragas) across both a naive RAG baseline (plain top-k similarity search, no reranking/grading/retries) and this agentic pipeline.
+A 15-question test set was auto-generated from the book, then scored with RAGAS across both a naive RAG baseline (plain top-k similarity search, no reranking/grading/retries) and this agentic pipeline.
 
 | Metric | Naive RAG | Agentic RAG | Δ |
 |---|---|---|---|
@@ -93,7 +86,6 @@ On one test question, the agent's first generated answer failed its own grounded
 [GROUND CHECK] GROUNDED -> PASS
 
 
-
 A naive pipeline would have returned the first (ungrounded) answer with no verification step.
 
 ### Example: honest refusal instead of hallucination
@@ -112,10 +104,10 @@ Query: *"What is the capital of France?"* (deliberately out of the book's domain
 Final answer: "The provided context does not contain enough information to answer the question."
 
 
-
 ## Setup
 
 **1. Clone and set up the environment**
+
 ```bash
 git clone https://github.com/hassnain45/agentic-rag-project.git
 cd agentic-rag-project
@@ -127,35 +119,37 @@ pip install -r requirements.txt
 **2. Add your Gemini API key**
 
 Create a `.env` file in the project root:
-
 GOOGLE_API_KEY=your_key_here
 
-Get a free key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+Get a free key at aistudio.google.com/apikey.
 
 **3. Add a source PDF**
 
 Drop any PDF into `data/raw/`. To use the same book as this project:
+
 ```bash
 curl.exe -L "https://d2l.ai/d2l-en.pdf" -o "data/raw/dive_into_deep_learning.pdf"
 ```
 
 **4. Build the vector store**
+
 ```bash
 python src/ingestion/embed_and_store.py
 ```
 
 **5. Run the agent from the command line**
+
 ```bash
 python src/agent/graph.py
 ```
 
 **6. Or launch the interactive dashboard**
+
 ```bash
 streamlit run src/ui/dashboard.py
 ```
 
 ## Project structure
-
 agentic-rag-project/
 ├── data/
 │ ├── raw/ # Source PDFs
@@ -181,3 +175,4 @@ agentic-rag-project/
 - Multi-modal retrieval over the book's figures/diagrams
 - Query decomposition for multi-part questions
 - Swap Gemini for a local model to remove rate-limit dependency
+
