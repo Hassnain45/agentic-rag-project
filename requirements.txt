@@ -1,0 +1,14 @@
+langchain
+langchain-community
+langchain-huggingface
+langgraph
+chromadb
+rank-bm25
+sentence-transformers
+langchain-google-genai
+google-generativeai
+ragas
+datasets
+streamlit
+pypdf
+python-dotenv

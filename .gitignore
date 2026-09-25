@@ -1,0 +1,22 @@
+# Environment
+.env
+venv/
+env/
+
+# Data (book PDFs can be large; don't commit them)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Vector DB
+chroma_db/
+*.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
